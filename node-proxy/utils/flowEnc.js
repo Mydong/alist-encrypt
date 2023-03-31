@@ -2,6 +2,7 @@
 
 import MixEnc from './mixEnc.js'
 import Rc4 from './rc4.js'
+import Rc4back from './rc4back.js'
 
 class FlowEnc {
   constructor(password, encryptType = 'mix', fileSize = 0) {
@@ -16,6 +17,10 @@ class FlowEnc {
       console.log('@@rc4', encryptType, fileSize)
       encryptFlow = new Rc4(password, fileSize)
     }
+    if (encryptType === 'rc4back') {
+      console.log('@@Rc4back', encryptType, fileSize)
+      encryptFlow = new Rc4back(password, fileSize)
+    }
     if (encryptType === null) {
       throw new Error('FlowEnc error')
     }
@@ -26,6 +31,9 @@ class FlowEnc {
   // 设置文件开始加密的位置
   async setPosition(position) {
     if (this.encryptType === 'rc4') {
+      await this.encryptFlow.setPositionAsync(position)
+    }
+    if (this.encryptType === 'rc4back') {
       await this.encryptFlow.setPositionAsync(position)
     }
   }
