@@ -68,6 +68,7 @@ webdavRouter.all('/redirect/:key', async (ctx) => {
   if (decode) {
     decryptTransform = decode !== '0' ? flowEnc.decryptTransform() : null
   }
+  flowEnc.cachePosition()
   // 请求实际服务资源
   await httpProxy(request, response, null, decryptTransform)
   console.log('----finish redirect---', decode, request.urlAddr, decryptTransform === null)
@@ -126,11 +127,11 @@ async function webdavHandle(ctx, next) {
     // 如果是alist的话，那么必然有这个文件的size缓存（进过list就会被缓存起来）
     request.fileSize = 0
     // 这里需要处理掉/p 路径
-    if (filePath.indexOf('/p') === 0) {
-      filePath = filePath.replace('/p', '')
+    if (filePath.indexOf('/p/') === 0) {
+      filePath = filePath.replace('/p/', '/')
     }
-    if (filePath.indexOf('/d') === 0) {
-      filePath = filePath.replace('/d', '')
+    if (filePath.indexOf('/d/') === 0) {
+      filePath = filePath.replace('/d/', '/')
     }
     const fileInfo = await getFileInfo(filePath)
     console.log('@@getFileInfo:', filePath, fileInfo, request.urlAddr)
@@ -160,6 +161,8 @@ async function webdavHandle(ctx, next) {
       return await httpProxy(request, response)
     }
     const flowEnc = new FlowEnc(passwdInfo.password, passwdInfo.encType, request.fileSize)
+    // if he get the video , cache position
+    flowEnc.cachePosition()
     if (start) {
       await flowEnc.setPosition(start)
     }
@@ -214,6 +217,10 @@ webdavRouter.all('/api/fs/list', bodyparserMw, async (ctx, next) => {
   ctx.req.reqBody = JSON.stringify(ctx.request.body)
   const respBody = await httpClient(ctx.req)
   const result = JSON.parse(respBody)
+  if (!result.data) {
+    ctx.body = result
+    return
+  }
   const content = result.data.content
   if (!content) {
     ctx.body = result
