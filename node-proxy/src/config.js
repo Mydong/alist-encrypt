@@ -1,6 +1,6 @@
 import fs from 'fs'
-import { addUserInfo, initUserTable, getUserInfo } from './dao/userDao.js'
-import { initFileTable } from './dao/fileDao.js'
+import { addUserInfo, getUserInfo } from './dao/userDao.js'
+import nedb from './utils/levelDB.js'
 
 // inti config, fix ncc get local conf
 function getConfPath() {
@@ -89,8 +89,7 @@ if (configData.alistServer.flowPassword) {
 /** 初始化用户的数据库 */
 async function init() {
   try {
-    initFileTable()
-    await initUserTable()
+    await nedb.load()
     let admin = await getUserInfo('admin')
     // 初始化admin账号
     if (admin == null) {
