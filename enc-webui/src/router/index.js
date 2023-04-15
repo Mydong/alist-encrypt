@@ -80,6 +80,18 @@ export const constantRoutes = [
     ]
   },
   {
+    path: '/encrypt-local',
+    component: Layout,
+    children: [
+      {
+        path: 'index',
+        component: () => import('@/views/encrypt-local/index.vue'),
+        name: 'encrypt-local',
+        meta: { title: 'encrypt local', icon: 'example' }
+      }
+    ]
+  },
+  {
     path: '/encrypt-online',
     component: Layout,
     children: [
@@ -103,18 +115,18 @@ export const constantRoutes = [
       }
     ]
   },
-  {
-    path: '/description',
-    component: Layout,
-    children: [
-      {
-        path: 'index',
-        component: () => import('@/views/description/index.vue'),
-        name: 'description',
-        meta: { title: 'description', icon: 'example' }
-      }
-    ]
-  },
+  // {
+  //   path: '/description',
+  //   component: Layout,
+  //   children: [
+  //     {
+  //       path: 'index',
+  //       component: () => import('@/views/description/index.vue'),
+  //       name: 'description',
+  //       meta: { title: 'description', icon: 'example' }
+  //     }
+  //   ]
+  // },
 
   // {
   //   path: '/error-log',
