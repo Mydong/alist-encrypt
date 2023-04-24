@@ -16,13 +16,14 @@ export function convertRealName(password, encType, pathText) {
   }
   // try encode name, fileName don't need decodeURI，encodeUrl func can't encode that like '(' '!'  in nodejs
   const ext = path.extname(fileName)
-  const encName = encodeName(password, encType, decodeURI(fileName))
+  const encName = encodeName(password, encType, decodeURIComponent(fileName))
+  console.log('@@decodeURI(fileName)', decodeURIComponent(fileName))
   return encName + ext
 }
 
 // if file name has encrypt, return show name
 export function convertShowName(password, encType, pathText) {
-  const fileName = path.basename(decodeURI(pathText))
+  const fileName = path.basename(decodeURIComponent(pathText))
   const ext = path.extname(fileName)
   const encName = fileName.replace(ext, '')
   // encName don't need decodeURI
@@ -66,12 +67,12 @@ export function decodeName(password, encType, encodeName) {
   if (MixBase64.getSourceChar(crc6Bit) !== crc6Check) {
     return null
   }
-  // event pass crc6，it mabey decode error, like this name '68758PICxAd_1024-666 - 副本33.png'
+  // event pass crc6，it maybe decode error, like this name '68758PICxAd_1024-666 - 副本33.png'
   let decodeStr = null
   try {
     decodeStr = mix64.decode(subEncName).toString('utf8')
   } catch (e) {
-    console.log(e)
+    console.log('@@mix64-decode', subEncName)
   }
   return decodeStr
 }
@@ -105,9 +106,10 @@ export function pathFindPasswd(passwdList, url) {
         // check folder name is can decode
         // getPassInfo()
         const newPasswdInfo = Object.assign({}, passwdInfo)
-        const folders = path.dirname(url).split('/')
+        // url maybe a folder, need decode
+        const folders = url.split('/')
         for (const folderName of folders) {
-          const data = decodeFolderName(passwdInfo.password, passwdInfo.encType, folderName)
+          const data = decodeFolderName(passwdInfo.password, passwdInfo.encType, decodeURIComponent(folderName) )
           if (data) {
             newPasswdInfo.encType = data.folderEncType
             newPasswdInfo.password = data.folderPasswd
