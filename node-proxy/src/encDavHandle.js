@@ -65,13 +65,13 @@ const handle = async (ctx, next) => {
   const request = ctx.req
   const { passwdList } = request.webdavConfig
   const { passwdInfo } = pathFindPasswd(passwdList, decodeURIComponent(request.url))
-  if (ctx.method.toLocaleUpperCase() === 'PROPFIND' && passwdInfo && passwdInfo.encName) {
+  if (ctx.method.toLocaleUpperCase() === 'PROPFIND') {
     // check dir, convert url
     const url = request.url
     if (passwdInfo && passwdInfo.encName) {
       // check dir, convert url
       const reqFileName = path.basename(url)
-      // cache source file info, realName is has encodeUrl，this '(' ')' can't encodeUrl.
+      // cache source file info, realName has execute encodeUrl()，this '(' '+' can't encodeUrl.
       const realName = convertRealName(passwdInfo.password, passwdInfo.encType, url)
       // when the name contain the + , ! ,
       const sourceUrl = path.dirname(url) + '/' + realName
@@ -98,26 +98,31 @@ const handle = async (ctx, next) => {
             const { fileName, showName } = getFileNameForShow(fileInfo, passwdInfo)
             // logger.debug('@@getFileNameForShow1 list', passwdInfo.password, fileName, decodeURI(fileName), showName)
             if (fileName) {
-              respBody = respBody.replace(`${fileName}</D:href>`, `${encodeURIComponent(showName)}</D:href>`)
-              respBody = respBody.replace(`${decodeURIComponent(fileName)}</D:displayname>`, `${decodeURIComponent(showName)}</D:displayname>`)
+              const showXmlName = showName.replace(/&/g, '&amp;').replace(/</g, '&gt;')
+              respBody = respBody.replace(`${fileName}</D:href>`, `${encodeURI(showXmlName)}</D:href>`)
+              respBody = respBody.replace(`${decodeURI(fileName)}</D:displayname>`, `${decodeURI(showXmlName)}</D:displayname>`)
             }
           }
         })
-        // for cache
+        // awaitting cacheWebdavFileInfo a moment
         await sleep(50)
       } else if (passwdInfo && passwdInfo.encName) {
         const fileInfo = respJson
         const { fileName, showName } = getFileNameForShow(fileInfo, passwdInfo)
         // logger.debug('@@getFileNameForShow2 file', fileName, showName, url, respJson.propstat)
         if (fileName) {
-          respBody = respBody.replace(`${fileName}</D:href>`, `${encodeURIComponent(showName)}</D:href>`)
-          respBody = respBody.replace(`${decodeURIComponent(fileName)}</D:displayname>`, `${decodeURIComponent(showName)}</D:displayname>`)
+          const showXmlName = showName.replace(/&/g, '&amp;').replace(/</g, '&gt;')
+          respBody = respBody.replace(`${fileName}</D:href>`, `${encodeURI(showXmlName)}</D:href>`)
+          respBody = respBody.replace(`${decodeURI(fileName)}</D:displayname>`, `${decodeURI(showXmlName)}</D:displayname>`)
         }
       }
     }
+    // 检查数据兼容的问题，优先XML对比。
     // logger.debug('@@respJsxml', respBody)
     // const resultBody = parser.parse(respBody)
-    // logger.debug('@@respJSONData', JSON.stringify(resultBody))
+    // logger.debug('@@respJSONData2', ctx.res.statusCode, JSON.stringify(resultBody))
+    // fix webdav 401 bug
+    ctx.status = ctx.res.statusCode
     ctx.body = respBody
     return
   }
@@ -135,9 +140,9 @@ const handle = async (ctx, next) => {
   // fix rclone bug
   if (request.method.toLocaleUpperCase() === 'PUT' && passwdInfo && passwdInfo.encName) {
     const url = request.url
-    const getcontentlength = request.headers['content-length']
+    const contentLength = request.headers['content-length'] || request.headers['x-expected-entity-length'] || 0
     const fileName = convertShowName(passwdInfo.password, passwdInfo.encType, url)
-    const fileDetail = { path: url, name: fileName, is_dir: false, size: getcontentlength }
+    const fileDetail = { path: url, name: fileName, is_dir: false, size: contentLength }
     await cacheFileInfo(fileDetail)
   }
 }
