@@ -79,6 +79,9 @@ proxyRouter.all('/redirect/:key', async (ctx) => {
   request.passwdInfo = passwdInfo
   // 123网盘和天翼网盘多次302
   request.fileSize = fileSize
+  // authorization 是alist网页版的token，不是webdav的，这里修复天翼云无法获取资源的问题
+  delete request.headers.authorization
+
   // 默认判断路径来识别是否要解密，如果有decode参数，那么则按decode来处理，这样可以让用户手动处理是否解密？(那还不如直接在alist下载)
   let decryptTransform = passwdInfo.enable && pathExec(passwdInfo.encPath, request.url) ? flowEnc.decryptTransform() : null
   if (decode) {
@@ -142,7 +145,7 @@ async function proxyHandle(ctx, next) {
     return await httpProxy(request, response, flowEnc.encryptTransform())
   }
   // 如果是下载文件，那么就进行判断是否解密
-  if (~'GET,HEAD,POST'.indexOf(request.method.toLocaleUpperCase()) && passwdInfo) {
+  if ('GET,HEAD,POST'.includes(request.method.toLocaleUpperCase()) && passwdInfo) {
     // 根据文件路径来获取文件的大小
     const urlPath = ctx.req.url.split('?')[0]
     let filePath = urlPath
@@ -197,7 +200,7 @@ webdavServer.forEach((webdavConfig) => {
 
 /* =================================== 单独处理alist的逻辑 ====================================== */
 
-// 先处理webdav，然后再处理普通的http
+// 单独处理alist的所有/dav
 proxyRouter.all(/^\/dav\/*/, preProxy(alistServer, true), encDavHandle, proxyHandle)
 
 // 其他的代理request预处理，处理要跳转的路径等
